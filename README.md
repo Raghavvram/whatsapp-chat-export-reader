@@ -55,5 +55,4 @@ This project uses `uv` for dependency management.
 Feel free to fork the repository, make improvements, and submit pull requests.
 
 ## License
-
-[Specify your license here, e.g., MIT License]
+MIT License
