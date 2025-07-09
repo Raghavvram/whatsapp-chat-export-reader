@@ -1,21 +1,39 @@
 import re
 import streamlit as st
 import pandas as pd
+import hashlib
+import colorsys
 
 # --- Page Configuration ---
 st.set_page_config(page_title="WhatsApp Chat Reader", page_icon="📱", layout="wide")
+
+# Function to generate a consistent color from a string
+def get_color_from_name(name):
+    # Use SHA256 hash to get a consistent number from the name
+    hash_object = hashlib.sha256(name.encode())
+    hex_dig = hash_object.hexdigest()
+    # Take the first few characters of the hash to generate a hue
+    hue = int(hex_dig[:6], 16) % 360
+
+    # Convert HSL to RGB. Fixed saturation and lightness for good contrast on dark background.
+    # Saturation (S) around 0.7-0.9, Lightness (L) around 0.5-0.7 for vibrant but not too bright colors.
+    rgb = colorsys.hls_to_rgb(hue / 360, 0.6, 0.8)
+    # Convert RGB to hex
+    return '#%02x%02x%02x' % (int(rgb[0]*255), int(rgb[1]*255), int(rgb[2]*255))
 
 # --- Custom CSS for a better UI ---
 st.markdown("""
 <style>
     /* General body styling */
     body {
-        background-color: #f0f2f5; /* A light grey background */
+        background-color: #0E1117 !important; /* Dark background */
+        color: #FAFAFA !important; /* Light text */
     }
     .stApp {
-        background-color: #e5ddd5; /* WhatsApp-like background */
-        background-image: url("https://user-images.githubusercontent.com/15075759/28719144-86dc0f70-73b1-11e7-911d-60d70fcded21.png");
+        background-color: #0E1117 !important; /* Dark background */
+        background-image: url("https://www.transparenttextures.com/patterns/dark-mosaic.png"); /* Dark WhatsApp-like background */
         background-repeat: repeat;
+        color: #FAFAFA !important; /* Light text */
     }
 
     /* Chat bubble styling */
@@ -26,20 +44,7 @@ st.markdown("""
         max-width: 75%;
         word-wrap: break-word;
         display: inline-block;
-    }
-
-    /* User's message bubble */
-    .user-bubble {
-        background-color: #dcf8c6; /* Light green */
-        color: #303030;
-        text-align: left;
-    }
-
-    /* Other sender's message bubble */
-    .sender-bubble {
-        background-color: #ffffff; /* White */
-        color: #303030;
-        text-align: left;
+        color: #0E1117 !important; /* Dark text for chat bubbles */
     }
 
     /* Message container alignment */
@@ -56,7 +61,14 @@ st.markdown("""
     .sender-name {
         font-weight: bold;
         margin-bottom: 4px;
-        color: #027f6e; /* A teal color for sender name */
+        color: #FAFAFA !important; /* Light text for sender name */
+    }
+
+    /* Headings and Titles */
+    h1, h2, h3, h4, h5, h6,
+    [data-testid="stTitle"],
+    [data-testid="stHeader"] {
+        color: #262730 !important; /* Dark text for headings and titles */
     }
 
 </style>
@@ -87,6 +99,9 @@ chat_data = parse_chat('whatsapp.txt')
 if chat_data:
     chat_df = pd.DataFrame(chat_data)
 
+    # Generate colors for each sender
+    sender_colors = {sender: get_color_from_name(sender) for sender in chat_df['sender'].unique()}
+
     # --- Sidebar for Filtering ---
     st.sidebar.title("Options")
     senders = sorted(chat_df['sender'].unique())
@@ -109,12 +124,14 @@ if chat_data:
 
     for _, row in filtered_data.iterrows():
         is_user = row['sender'] == user_sender
+        current_sender_color = sender_colors[row['sender']]
 
         if is_user:
             st.markdown(
                 f"""
                 <div class="user-message-container">
-                    <div class="chat-bubble user-bubble">
+                    <div class="chat-bubble" style="background-color: {current_sender_color};">
+                        <div class="sender-name">{row['sender']}</div>
                         {row['message']}
                     </div>
                 </div>
@@ -123,7 +140,7 @@ if chat_data:
             st.markdown(
                 f"""
                 <div class="sender-message-container">
-                    <div class="chat-bubble sender-bubble">
+                    <div class="chat-bubble" style="background-color: {current_sender_color};">
                         <div class="sender-name">{row['sender']}</div>
                         {row['message']}
                     </div>
