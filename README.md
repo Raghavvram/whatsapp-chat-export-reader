@@ -33,16 +33,16 @@ This project uses `uv` for dependency management.
 
 ## Usage
 
-1.  **Prepare your WhatsApp chat export file:**
-    *   Export your WhatsApp chat (without media) to a `.txt` file.
-    *   Rename the exported file to `whatsapp.txt` and place it in the root directory of this project.
-
-2.  **Run the Streamlit application:**
+1.  **Run the Streamlit application:**
     ```bash
     uv run streamlit run WhatsappExportWebUI.py
     ```
 
     This will open the application in your web browser.
+
+2.  **Upload your WhatsApp chat export file:**
+    *   Export your WhatsApp chat (without media) to a `.txt` file.
+    *   In the Streamlit application, use the file uploader to select your exported `.txt` file. The file can have any name.
 
 ## Customization
 
