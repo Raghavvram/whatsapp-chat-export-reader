@@ -75,76 +75,76 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # Function to parse WhatsApp chat data
-def parse_chat(file_path):
+def parse_chat(file_content):
     chat_data = []
-    try:
-        with open(file_path, 'r', encoding='utf-8') as file:
-            for line in file:
-                # Regex to capture timestamp, sender, and message
-                match = re.match(r'(\d{1,2}/\d{1,2}/\d{2,4}, \d{1,2}:\d{2}) - ([^:]+): (.*)', line)
-                if match:
-                    timestamp, sender, message = match.groups()
-                    chat_data.append({'timestamp': timestamp.strip(), 'sender': sender.strip(), 'message': message.strip()})
-    except FileNotFoundError:
-        st.error(f"Error: The chat file '{file_path}' was not found. Please make sure it's in the same directory as the script.")
-        return None
+    for line in file_content.splitlines():
+        # Regex to capture timestamp, sender, and message
+        match = re.match(r'(\d{1,2}/\d{1,2}/\d{2,4}, \d{1,2}:\d{2}) - ([^:]+): (.*)', line)
+        if match:
+            timestamp, sender, message = match.groups()
+            chat_data.append({'timestamp': timestamp.strip(), 'sender': sender.strip(), 'message': message.strip()})
     return chat_data
 
 # --- Main Application ---
 st.title("WhatsApp Chat Viewer")
 
-# Load chat data
-chat_data = parse_chat('whatsapp.txt')
+uploaded_file = st.file_uploader("Upload your WhatsApp chat export file", type=["txt"])
 
-if chat_data:
-    chat_df = pd.DataFrame(chat_data)
+if uploaded_file is not None:
+    file_contents = uploaded_file.getvalue().decode("utf-8")
+    chat_data = parse_chat(file_contents)
 
-    # Generate colors for each sender
-    sender_colors = {sender: get_color_from_name(sender) for sender in chat_df['sender'].unique()}
+    if chat_data:
+        chat_df = pd.DataFrame(chat_data)
 
-    # --- Sidebar for Filtering ---
-    st.sidebar.title("Options")
-    senders = sorted(chat_df['sender'].unique())
-    
-    # Let user identify themselves. Default to "You" if present, otherwise the first sender.
-    user_identity = "You" if "You" in senders else senders[0]
-    user_sender = st.sidebar.selectbox("Who are you in this chat?", senders, index=senders.index(user_identity))
+        # Generate colors for each sender
+        sender_colors = {sender: get_color_from_name(sender) for sender in chat_df['sender'].unique()}
 
-    # Filter by sender
-    selected_sender = st.sidebar.selectbox("Filter by Sender", ["All"] + list(senders))
+        # --- Sidebar for Filtering ---
+        st.sidebar.title("Options")
+        senders = sorted(chat_df['sender'].unique())
+        
+        # Let user identify themselves. Default to "You" if present, otherwise the first sender.
+        user_identity = "You" if "You" in senders else senders[0]
+        user_sender = st.sidebar.selectbox("Who are you in this chat?", senders, index=senders.index(user_identity))
 
-    if selected_sender != "All":
-        filtered_data = chat_df[chat_df['sender'] == selected_sender]
-    else:
-        filtered_data = chat_df
+        # Filter by sender
+        selected_sender = st.sidebar.selectbox("Filter by Sender", ["All"] + list(senders))
 
-    # --- Display Chat Messages ---
-    st.header("Chat Conversation")
-    st.markdown("---")
-
-    for _, row in filtered_data.iterrows():
-        is_user = row['sender'] == user_sender
-        current_sender_color = sender_colors[row['sender']]
-
-        if is_user:
-            st.markdown(
-                f"""
-                <div class="user-message-container">
-                    <div class="chat-bubble" style="background-color: {current_sender_color};">
-                        <div class="sender-name">{row['sender']}</div>
-                        {row['message']}
-                    </div>
-                </div>
-                """, unsafe_allow_html=True)
+        if selected_sender != "All":
+            filtered_data = chat_df[chat_df['sender'] == selected_sender]
         else:
-            st.markdown(
-                f"""
-                <div class="sender-message-container">
-                    <div class="chat-bubble" style="background-color: {current_sender_color};">
-                        <div class="sender-name">{row['sender']}</div>
-                        {row['message']}
+            filtered_data = chat_df
+
+        # --- Display Chat Messages ---
+        st.header("Chat Conversation")
+        st.markdown("---")
+
+        for _, row in filtered_data.iterrows():
+            is_user = row['sender'] == user_sender
+            current_sender_color = sender_colors[row['sender']]
+
+            if is_user:
+                st.markdown(
+                    f"""
+                    <div class="user-message-container">
+                        <div class="chat-bubble" style="background-color: {current_sender_color};">
+                            <div class="sender-name">{row['sender']}</div>
+                            {row['message']}
+                        </div>
                     </div>
-                </div>
-                """, unsafe_allow_html=True)
+                    """, unsafe_allow_html=True)
+            else:
+                st.markdown(
+                    f"""
+                    <div class="sender-message-container">
+                        <div class="chat-bubble" style="background-color: {current_sender_color};">
+                            <div class="sender-name">{row['sender']}</div>
+                            {row['message']}
+                        </div>
+                    </div>
+                    """, unsafe_allow_html=True)
+    else:
+        st.info("Could not parse chat data from the uploaded file. Please ensure it's a valid WhatsApp chat export.")
 else:
-    st.info("Could not load chat data. Please check the file 'whatsapp.txt'.")
+    st.info("Please upload a WhatsApp chat export file to view the conversation.")
